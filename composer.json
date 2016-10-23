@@ -1,0 +1,10 @@
+{
+    "autoload":{
+        "psr-4" : {
+            "Backup\\" : "src/"
+        }
+    },
+    "require": {
+        "google/apiclient": "^2.0"
+    }
+}
