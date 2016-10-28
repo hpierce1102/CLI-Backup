@@ -1,0 +1,4 @@
+DefaultStorageEngine: SQLite
+StorageEngine:
+  SQLite:
+    file: config/sqlite.sql
