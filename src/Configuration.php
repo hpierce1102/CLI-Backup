@@ -20,6 +20,7 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('DefaultStorageEngine')
+                    ->defaultValue('SQLite')
                 ->end()
                 ->arrayNode('StorageEngine')
                     ->children()

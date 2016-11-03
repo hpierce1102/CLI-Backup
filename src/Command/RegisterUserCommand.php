@@ -8,6 +8,8 @@
 
 namespace Backup\Command;
 
+use Backup\Util\ClassFinder;
+use Backup\Util\ConfigParser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,6 +31,10 @@ class RegisterUserCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-
+        $config = ConfigParser::getConfig();
+        
+        foreach(ClassFinder::getClassesInNamespace('Backup\\StorageEngine') as $storageEngine){
+            var_dump($storageEngine);
+        }
     }
 }

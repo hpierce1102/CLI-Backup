@@ -1,13 +1,21 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
+use Backup\Command\BackupCommand;
+use Backup\Command\CleanUpCommand;
+use Backup\Command\DebugCommand;
+use Backup\Command\RegisterUserCommand;
+use Backup\Command\RestoreCommand;
 
 $application = new Application();
 
-$application->add();
-
+$application->add(new BackupCommand());
+$application->add(new CleanUpCommand());
+$application->add(new DebugCommand());
+$application->add(new RegisterUserCommand());
+$application->add(new RestoreCommand());
 
 $application->run();
