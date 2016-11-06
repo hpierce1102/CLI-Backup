@@ -13,6 +13,7 @@ use Backup\User\User;
 interface StorageEngineInterface
 {
     public static function initFromConfig(Array $config);
+    public static function getName();
     public function persistUser(String $userAlias, User $user);
     public function retrieveUser(String $userAlias);
 }

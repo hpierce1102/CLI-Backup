@@ -12,6 +12,11 @@ use Backup\User\User;
 
 class JSONStorageEngine implements StorageEngineInterface
 {
+    public static function getName()
+    {
+        return "JSON";
+    }
+
     public static function initFromConfig(Array $config)
     {
         // TODO: Implement initFromConfig() method.

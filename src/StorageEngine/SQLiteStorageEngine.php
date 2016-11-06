@@ -17,6 +17,11 @@ class SQLiteStorageEngine implements StorageEngineInterface
     /** @var \SQLite3 */
     protected $sqlite;
 
+    public static function getName()
+    {
+        return "SQLite";
+    }
+
     public static function initFromConfig(Array $config)
     {
         if(!isset($config['StorageEngine']['SQLite']['file'])){
