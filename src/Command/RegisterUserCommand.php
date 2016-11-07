@@ -36,12 +36,13 @@ class RegisterUserCommand extends Command
 
         //Get the storageEngine to use based on the config.
         $testedStorageEngineNames = [];
-        foreach(ClassFinder::getClassesInNamespace('Backup\\StorageEngine') as $storageEngineClass){
-            $storageEngine = new $storageEngineClass();
-            if($storageEngine instanceof StorageEngineInterface &&
-               $config['DefaultStorageEngine'] == $storageEngine::getName()) {
+        /** @var StorageEngineInterface $storageEngine */
+        foreach(ClassFinder::getClassesInNamespace('Backup\\StorageEngine',
+                'Backup\\StorageEngine\\StorageEngineInterface') as $storageEngine){
+            if($config['DefaultStorageEngine'] == $storageEngine::getName()) {
+                $storageEngine = new $storageEngine();
                 break;
-            } else if ($storageEngine instanceof StorageEngineInterface) {
+            } else {
                 $testedStorageEngineNames[] = $storageEngine::getName();
             }
 
@@ -65,13 +66,10 @@ class RegisterUserCommand extends Command
         $userAlias = readline('Provide a user alias:');
 
         //Query the user to determine which type of user to create
-        $loadedUserBuilderClasses = ClassFinder::getClassesInNamespace('Backup\\UserBuilder');
+        $loadedUserBuilderClasses = ClassFinder::getClassesInNamespace('Backup\\UserBuilder', 'Backup\\UserBuilder\\UserBuilderInterface');
         $userBuilderMessages = [];
-        foreach($loadedUserBuilderClasses as $key => $userBuilderClass){
-            $userBuilder = new $userBuilderClass();
-            if($userBuilder instanceof UserBuilderInterface){
-                $userBuilderMessages[] = sprintf("[%s] - %s", $key, $userBuilder::getName());
-            }
+        foreach($loadedUserBuilderClasses as $key => $userBuilder){
+            $userBuilderMessages[] = sprintf("[%s] - %s", $key, $userBuilder::getName());
         }
 
         $messages = [
@@ -97,6 +95,4 @@ class RegisterUserCommand extends Command
 
         $storageEngine->persistUser($userAlias, $user);
     }
-
-
 }
