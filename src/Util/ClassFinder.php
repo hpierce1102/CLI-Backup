@@ -17,7 +17,7 @@ class ClassFinder
     //This value should be the directory that contains composer.json
     const appRoot = __DIR__ . "/../../";
 
-    public static function getClassesInNamespace($namespace)
+    public static function getClassesInNamespace(String $namespace, String $interface=null)
     {
         $files = scandir(self::getNamespaceDirectory($namespace));
 
@@ -25,9 +25,18 @@ class ClassFinder
             return $namespace . '\\' . str_replace('.php', '', $file);
         }, $files);
 
-        return array_filter($classes, function($possibleClass){
+        $classes = array_filter($classes, function($possibleClass){
             return class_exists($possibleClass);
         });
+
+        if(isset($interface)){
+            $classes = array_filter($classes, function($possibleClass) use ($interface){
+                $reflection = new \ReflectionClass($possibleClass);
+                return in_array($interface, $reflection->getInterfaceNames());
+            });
+        }
+
+        return $classes;
     }
 
     private static function getDefinedNamespaces()
