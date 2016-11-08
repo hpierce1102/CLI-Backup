@@ -36,6 +36,14 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
+                ->arrayNode('files')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('sourceFile')->end()
+                            ->scalarNode('location')->end()
+                        ->end()
+                    ->end()
+                ->end()
             ->end()
         ;
 

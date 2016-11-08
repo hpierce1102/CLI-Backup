@@ -2,3 +2,6 @@ DefaultStorageEngine: SQLite
 StorageEngine:
   SQLite:
     file: config/sqlite.sql
+files:
+  - {sourceFile: /home/hpierce/code/cFun/, location: /cStuff/}
+  - {sourceFile: /home/hpierce/code/jse/, location: /angularTooling/}
