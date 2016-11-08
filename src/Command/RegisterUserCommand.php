@@ -9,8 +9,10 @@
 namespace Backup\Command;
 
 use Backup\StorageEngine\StorageEngineInterface;
+use Backup\UserBuilder\UserBuilderInterface;
 use Backup\Util\ClassFinder;
 use Backup\Util\ConfigParser;
+use Backup\Util\Readline;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -40,7 +42,7 @@ class RegisterUserCommand extends Command
         foreach(ClassFinder::getClassesInNamespace('Backup\\StorageEngine',
                 'Backup\\StorageEngine\\StorageEngineInterface') as $storageEngine){
             if($config['DefaultStorageEngine'] == $storageEngine::getName()) {
-                $storageEngine = new $storageEngine();
+                $storageEngine = $storageEngine::initFromConfig($config);
                 break;
             } else {
                 $testedStorageEngineNames[] = $storageEngine::getName();
@@ -63,7 +65,7 @@ class RegisterUserCommand extends Command
         }
 
         //Query the user for a user alias
-        $userAlias = readline('Provide a user alias:');
+        $userAlias = Readline::readline('Provide a user alias:');
 
         //Query the user to determine which type of user to create
         $loadedUserBuilderClasses = ClassFinder::getClassesInNamespace('Backup\\UserBuilder', 'Backup\\UserBuilder\\UserBuilderInterface');
@@ -79,9 +81,10 @@ class RegisterUserCommand extends Command
         $messages = array_merge($messages, $userBuilderMessages);
         $output->writeln($messages);
         do{
-            $input = readline('Pick a user builder: ');
+            $input = Readline::readline('Pick a user builder: ');
 
             if(isset($loadedUserBuilderClasses[$input])){
+                /** @var UserBuilderInterface $userBuilder */
                 $userBuilder = new $loadedUserBuilderClasses[$input]();
             } else {
                 $output->writeln("<error>Invalid input. Please try again.</error>");
@@ -91,7 +94,7 @@ class RegisterUserCommand extends Command
         $output->writeln(sprintf('<info>Successfully set User Builder to: %s</info>', $userBuilder::getName()),
             OutputInterface::VERBOSITY_DEBUG);
 
-        $user = $userBuilder->buildUser();
+        $user = $userBuilder->buildUser($output);
 
         $storageEngine->persistUser($userAlias, $user);
     }

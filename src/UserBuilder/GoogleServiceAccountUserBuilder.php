@@ -8,6 +8,7 @@
 namespace Backup\UserBuilder;
 
 use Backup\User\GoogleServiceAccountUser;
+use Backup\Util\Readline;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class GoogleServiceAccountUserBuilder implements UserBuilderInterface
@@ -20,17 +21,19 @@ class GoogleServiceAccountUserBuilder implements UserBuilderInterface
 
     public function buildUser(OutputInterface $output)
     {
-        $appName = readline('AppName:');
+        $appName = Readline::readline('AppName:');
 
         $defaultPath = 'config/GoogleServiceAccountSecret.json';
-        $pathToPrivateKeyFile = readline("Path to private key file ($defaultPath):");
+        $pathToPrivateKeyFile = Readline::readline("Path to private key file ($defaultPath):");
         $pathToPrivateKeyFile = empty($pathToPrivateKeyFile) ? $defaultPath : $pathToPrivateKeyFile;
 
-        $clientId = readline("ClientId:");
+        $clientId = Readline::readline("ClientId:");
 
         $user = new GoogleServiceAccountUser();
         $user->setAppName($appName);
         $user->setPathToPrivateKeyFile($pathToPrivateKeyFile);
         $user->setClientId($clientId);
+
+        return $user;
     }
 }

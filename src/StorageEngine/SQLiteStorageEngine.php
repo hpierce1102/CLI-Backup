@@ -47,7 +47,7 @@ class SQLiteStorageEngine implements StorageEngineInterface
 
         $stmt = $this->sqlite->prepare($query);
         $stmt->bindParam(':alias', $userAlias);
-        $stmt->bindParam(':params', serialize($user));
+        $stmt->bindParam(':params', $this->serialize($user));
         $stmt->execute();
 
         return $this->checkQuerySucceeded($query);
@@ -64,7 +64,7 @@ class SQLiteStorageEngine implements StorageEngineInterface
         $this->checkQuerySucceeded($query);
         
         $row = $result->fetchArray(SQLITE3_ASSOC);
-        return isset($row['params']) ? unserialize($row['params']) : null;
+        return isset($row['params']) ? $this->unserialize($row['params']) : null;
     }
 
     private function schemaExists()
@@ -100,5 +100,17 @@ class SQLiteStorageEngine implements StorageEngineInterface
         } else {
             return true;
         }
+    }
+
+    private function serialize($var)
+    {
+        $string = serialize($var);
+        return str_replace("\0", '\0', $string);
+    }
+
+    private function unserialize($string)
+    {
+        $string = str_replace('\0', "\0", $string);
+        return unserialize($string);
     }
 }
