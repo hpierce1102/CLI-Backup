@@ -8,6 +8,8 @@
 namespace Backup\Util;
 
 use Backup\Configuration;
+use Backup\Exception\InvalidConfigStateException;
+use Backup\StorageEngine\StorageEngineInterface;
 use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\Yaml\Yaml;
 
@@ -29,5 +31,33 @@ class ConfigParser
             $configuration,
             $configs
         );
+    }
+
+    public static function getStorageEngine()
+    {
+        $config = self::getConfig();
+
+        //Get the storageEngine to use based on the config.
+        $testedStorageEngineNames = [];
+        /** @var StorageEngineInterface $storageEngine */
+        foreach(ClassFinder::getClassesInNamespace('Backup\\StorageEngine',
+            'Backup\\StorageEngine\\StorageEngineInterface') as $storageEngine){
+            if($config['DefaultStorageEngine'] == $storageEngine::getName()) {
+                $storageEngine = $storageEngine::initFromConfig($config);
+                break;
+            } else {
+                $testedStorageEngineNames[] = $storageEngine::getName();
+            }
+
+            unset($storageEngine);
+        }
+
+        if(!isset($storageEngine)){
+            throw new InvalidConfigStateException(sprintf(
+                'Could not load a storage engine. Provided name: %s. Loaded names: %s',
+                $config['DefaultStorageEngine'], implode(', ', $testedStorageEngineNames)));
+        } else {
+            return $storageEngine;
+        }
     }
 }

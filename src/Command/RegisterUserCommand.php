@@ -34,35 +34,7 @@ class RegisterUserCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $config = ConfigParser::getConfig();
-
-        //Get the storageEngine to use based on the config.
-        $testedStorageEngineNames = [];
-        /** @var StorageEngineInterface $storageEngine */
-        foreach(ClassFinder::getClassesInNamespace('Backup\\StorageEngine',
-                'Backup\\StorageEngine\\StorageEngineInterface') as $storageEngine){
-            if($config['DefaultStorageEngine'] == $storageEngine::getName()) {
-                $storageEngine = $storageEngine::initFromConfig($config);
-                break;
-            } else {
-                $testedStorageEngineNames[] = $storageEngine::getName();
-            }
-
-            unset($storageEngine);
-        }
-
-        if(!isset($storageEngine)){
-            $output->writeln('<error>Could not load a storage engine.</error>');
-            $output->writeln(sprintf('<error>Provided name: %s. Loaded names: %s</error>',
-                    $config['DefaultStorageEngine'],
-                    implode(', ', $testedStorageEngineNames)
-                ),
-                OutputInterface::VERBOSITY_VERBOSE);
-            exit(1);
-        } else {
-            $output->writeln(sprintf('<info>Successfully set storage engine to: %s</info>', $storageEngine::getName()),
-                OutputInterface::VERBOSITY_DEBUG);
-        }
+        $storageEngine = ConfigParser::getStorageEngine();
 
         //Query the user for a user alias
         $userAlias = Readline::readline('Provide a user alias:');
@@ -70,6 +42,7 @@ class RegisterUserCommand extends Command
         //Query the user to determine which type of user to create
         $loadedUserBuilderClasses = ClassFinder::getClassesInNamespace('Backup\\UserBuilder', 'Backup\\UserBuilder\\UserBuilderInterface');
         $userBuilderMessages = [];
+        /** @var UserBuilderInterface $userBuilder */
         foreach($loadedUserBuilderClasses as $key => $userBuilder){
             $userBuilderMessages[] = sprintf("[%s] - %s", $key, $userBuilder::getName());
         }
