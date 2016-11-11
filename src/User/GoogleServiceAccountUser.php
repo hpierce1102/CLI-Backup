@@ -7,12 +7,19 @@
  */
 namespace Backup\User;
 
+use Backup\Uploader\GoogleDriveServiceAccountUploader;
+
 class GoogleServiceAccountUser extends User
 {
     protected $appName;
     //With respect to the application root.
     protected $pathToPrivateKeyFile;
     protected $clientId;
+
+    public static function getUploaderClass()
+    {
+        return GoogleDriveServiceAccountUploader::class;
+    }
 
     /**
      * @return mixed
