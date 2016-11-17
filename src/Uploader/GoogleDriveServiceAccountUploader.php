@@ -8,7 +8,7 @@
  * TODO: Add PHPDoc annotations and descriptions to functions.
  * TODO: Storing a cache might be nice, to prevent multiple HTTP requests for information we already found.
  * TODO: Work with data provided from a config file, rather than my non-secret info hardcoded into the class.
- * 
+ *
  * @copyright Hayden Pierce (hayden@haydenpierce.com)
  *
  * For the full copyright and license information, please view the LICENSE
@@ -16,30 +16,32 @@
  */
 namespace Backup\Uploader;
 
+use Backup\User\GoogleServiceAccountUser;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\OutputInterface;
+
 class GoogleDriveServiceAccountUploader implements UploaderInterface
 {
     private $folderIds;
     private $filesShared;
+    private $rateLimitCounter = 0;
 
     protected $user;
     protected $service;
+    protected $output;
     
-    const APP_NAME = 'My Project';
-    const APP_EMAIL = 'hpierce1102@gmail.com';
-    const PATH_TO_PRIVATE_KEY_FILE =  __DIR__ . '/../../secret.json';
-    const CLIENT_ID = 'ef56747c029920caa3a3f52635a2cc395da3bf9c';
     const SCOPES = \Google_Service_Drive::DRIVE . ' ' ;
 
-    public function __construct($user)
+    public function __construct(GoogleServiceAccountUser $user)
     {
         $this->folderIds = [];
         $this->filesShared = [];
         $this->user = $user;
 
         $client = new \Google_Client();
-        $client->setApplicationName(self::APP_NAME);
-        $client->setAuthConfigFile(self::PATH_TO_PRIVATE_KEY_FILE);
-        $client->setClientId(self::CLIENT_ID);
+        $client->setApplicationName($user->getAppName());
+        $client->setAuthConfigFile($user->getPathToPrivateKeyFile());
+        $client->setClientId($user->getClientId());
         $client->setAccessType('offline_access');
         $client->setScopes(self::SCOPES);
 
@@ -48,13 +50,27 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
 
     public function publishFiles(Array $files)
     {
+        if(isset($this->output)){
+            $progressBar = new ProgressBar($this->output, count($files));
+        }
+
         foreach($files as $key => $value){
             $this->publishFile($key, $value);
+
+            if(isset($progressBar)){
+                $progressBar->advance();
+            }
+        }
+
+        if(isset($progressBar)){
+            $progressBar->finish();
         }
     }
 
     public function publishFile(String $filePath, String $location)
     {
+        $location = ltrim($location, '/');
+        
         if(!file_exists($filePath)){
             throw new \InvalidArgumentException(sprintf('Could not find file at provided filepath: %s', $filePath));
         }
@@ -73,6 +89,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             $fileMetaData['parents'] = array($folderId);
         }
 
+        $this->rateLimit();
         $this->service->files->create(
             new \Google_Service_Drive_DriveFile($fileMetaData),
             array(
@@ -91,6 +108,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
     public function purgeFile(String $location)
     {
         $fileId = $this->findFileId($location);
+        $this->rateLimit();
         $this->service->files->delete($fileId);
     }
     
@@ -127,8 +145,9 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             return true;
         }
         //Check if the root folder is shared with user via google drive.
+        $this->rateLimit();
         $files = $this->service->files->listFiles(array(
-            'q' => "name='$location' and '{$this->user->getUser()}' in readers"
+            'q' => "name='$location' and '{$this->user->getGoogleAppsEmail()}' in readers"
         ))->getFiles();
 
 
@@ -138,9 +157,10 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             $emailPermission = new \Google_Service_Drive_Permission(array(
                 'type' => 'user',
                 'role' => 'reader',
-                'emailAddress' => $this->user->getUser()
+                'emailAddress' => $this->user->getGoogleAppsEmail()
             ));
 
+            $this->rateLimit();
             $this->service->permissions->create(
                 $shareFileId, $emailPermission, array('fields' => 'id'));
         }
@@ -153,6 +173,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
     private function resolveLocation($fileId)
     {
         /** @var \Google_Service_Drive_DriveFile $file */
+        $this->rateLimit();
         $file = $this->service->files->get($fileId, array(
            'fields' => 'name, id, parents'
         ));
@@ -169,6 +190,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
     {
         $pageToken = null;
         do{
+            $this->rateLimit();
             $response = $this->service->files->listFiles(array(
                 'pageSize' => 1000,
                 'pageToken' => $pageToken,
@@ -204,6 +226,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             $query .= " and '$parentId' in parents";
         }
 
+        $this->rateLimit();
         $files = $this->service->files->listFiles(array(
             'q' => $query
         ))->getFiles();
@@ -214,9 +237,6 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             unset($fileFragments[0]);
             return $this->findFile(implode('/', $fileFragments), $files[0]['id']);
         }
-
-
-
     }
 
     private function getFileName(String $location)
@@ -275,6 +295,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             $searchParams['q'] .= "and '$insideFolderId' in parents";
         }
 
+        $this->rateLimit();
         $folder = $this->service->files->listFiles($searchParams)->getFiles();
 
         if(count($folder) == 0){
@@ -335,6 +356,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             $fileMetadata['parents'] = array($parentId);
         }
 
+        $this->rateLimit();
         $folder = $this->service->files->create(
             new \Google_Service_Drive_DriveFile($fileMetadata),
             array(
@@ -343,5 +365,30 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
         );
 
         return $folder['id'];
+    }
+
+    /*
+     * Originally, rate limiting was planned to be implemented by overriding Google_Client's HTTP client (Guzzle\Client).
+     * However, the Google PHP SDK decided to hardcode in 'new Client' everywhere (PHPStorm has 41 hits - some of
+     * which are comments) and overriding all 30-odd methods all over the SDK seemed impractical. Additionally,
+     * pausing in the HTTP server meant that authentication was rate limited in addition to the queries that we called.
+     *
+     * Thus using this method within this class was deemed the best method because it prevents us from having to
+     * effectively maintain a fork within this project of the Google PHP SDK and gives us fine grain control over what
+     * is rate limited and want isn't.
+     *
+     * Because doing that is far worse than calling a private method before each API access.
+     */
+    private function rateLimit()
+    {
+        if($this->rateLimitCounter++ >= 2){
+            sleep(1);
+            $this->rateLimitCounter = 0;
+        }
+    }
+
+    public function setOutput(OutputInterface $output)
+    {
+        $this->output = $output;
     }
 }

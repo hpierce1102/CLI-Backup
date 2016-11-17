@@ -15,6 +15,24 @@ class GoogleServiceAccountUser extends User
     //With respect to the application root.
     protected $pathToPrivateKeyFile;
     protected $clientId;
+    //The email address by which to share files with.
+    protected $googleAppsEmail;
+
+    /**
+     * @return mixed
+     */
+    public function getGoogleAppsEmail()
+    {
+        return $this->googleAppsEmail;
+    }
+
+    /**
+     * @param mixed $googleAppsEmail
+     */
+    public function setGoogleAppsEmail($googleAppsEmail)
+    {
+        $this->googleAppsEmail = $googleAppsEmail;
+    }
 
     public static function getUploaderClass()
     {

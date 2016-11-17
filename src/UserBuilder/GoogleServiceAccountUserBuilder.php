@@ -29,10 +29,13 @@ class GoogleServiceAccountUserBuilder implements UserBuilderInterface
 
         $clientId = Readline::readline("ClientId:");
 
+        $googleAppsEmail = Readline::readline("Who should the files be shared with? GoogleAppsEmail:");
+
         $user = new GoogleServiceAccountUser();
         $user->setAppName($appName);
         $user->setPathToPrivateKeyFile($pathToPrivateKeyFile);
         $user->setClientId($clientId);
+        $user->setGoogleAppsEmail($googleAppsEmail);
 
         return $user;
     }
