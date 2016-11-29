@@ -128,7 +128,6 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
         $files = [];
         /** @var \Google_Service_Drive_DriveFile $file */
         foreach($this->listFilesGenerator() as $file){
-            var_dump($file);
             $metadata = [];
             $metadata['location'] = $this->resolveLocation($file->getId());
             $metadata['date'] = new \DateTime($file->getCreatedTime());
