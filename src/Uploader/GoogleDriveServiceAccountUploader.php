@@ -16,6 +16,7 @@
  */
 namespace Backup\Uploader;
 
+use Backup\Exception\FileNotFoundException;
 use Backup\User\GoogleServiceAccountUser;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -108,9 +109,12 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
     public function purgeFile(String $location)
     {
         $fileId = $this->findFileId($location);
-        $this->rateLimit();
-        $this->service->files->delete($fileId);
-    }
+        if($fileId){
+            $this->rateLimit();
+            $this->service->files->delete($fileId);
+        }
+
+}
     
     public function purgeFiles(Array $files)
     {
@@ -153,6 +157,10 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
 
         if(count($files) == 0){
             $shareFileId = $this->findFileId($location);
+            
+            if(!$shareFileId){
+                throw new FileNotFoundException(sprintf('Could not find a file with id: %s', $location));
+            }
 
             $emailPermission = new \Google_Service_Drive_Permission(array(
                 'type' => 'user',
@@ -208,7 +216,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
     private function findFileId(String $location)
     {
         $files = $this->findFile($location);
-        return $files[0]['id'];
+        return isset($files[0]) ? $files[0]['id'] : false;
     }
 
     private function findFile(String $filePath, String $parentId = null)
@@ -231,7 +239,9 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             'q' => $query
         ))->getFiles();
 
-        if(count($fileFragments) == 1){
+        if(empty($files)){
+            return false;
+        } else if(count($fileFragments) == 1){
             return $files;
         } else {
             unset($fileFragments[0]);
@@ -381,7 +391,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
      */
     private function rateLimit()
     {
-        if($this->rateLimitCounter++ >= 2){
+        if($this->rateLimitCounter++ >= 5){
             sleep(1);
             $this->rateLimitCounter = 0;
         }
@@ -390,5 +400,15 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
+    }
+
+    public function purgeAllFiles()
+    {
+        foreach($this->listFilesGenerator() as $file)
+        {
+            $location = $this->resolveLocation($file->getId());
+            var_dump('purging: ' . $location);
+            $this->purgeFile($location);
+        }
     }
 }
