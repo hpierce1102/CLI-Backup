@@ -128,9 +128,10 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
         $files = [];
         /** @var \Google_Service_Drive_DriveFile $file */
         foreach($this->listFilesGenerator() as $file){
+            var_dump($file);
             $metadata = [];
             $metadata['location'] = $this->resolveLocation($file->getId());
-            $metadata['date'] = $file->getCreatedTime();
+            $metadata['date'] = new \DateTime($file->getCreatedTime());
 
             $files[] = $metadata;
         }
@@ -202,7 +203,7 @@ class GoogleDriveServiceAccountUploader implements UploaderInterface
             $response = $this->service->files->listFiles(array(
                 'pageSize' => 1000,
                 'pageToken' => $pageToken,
-                'fields' => 'files(id, parents)'
+                'fields' => 'files(id, parents, createdTime)'
             ));
             $pageToken = $response['nextPageToken'];
             $files = $response->getFiles();
