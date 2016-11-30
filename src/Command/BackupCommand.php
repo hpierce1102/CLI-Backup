@@ -49,14 +49,10 @@ class BackupCommand extends Command
             $files = $this->getFilePaths($filePair['sourceFile'], $filePair['location']);
             $uploader->publishFiles($files);
         }
-
-
-
     }
 
     protected function getFilePaths($filesystemPath, $location)
     {
-
         $directory = new \RecursiveDirectoryIterator($filesystemPath);
         $iterator = new \RecursiveIteratorIterator($directory);
 
@@ -80,7 +76,5 @@ class BackupCommand extends Command
         }
 
         return $files;
-
-//        var_dump($iterator);
     }
 }
