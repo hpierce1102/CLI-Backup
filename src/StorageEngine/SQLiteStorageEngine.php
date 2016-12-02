@@ -67,6 +67,27 @@ class SQLiteStorageEngine implements StorageEngineInterface
         return isset($row['params']) ? $this->unserialize($row['params']) : null;
     }
 
+    public function listUsers()
+    {
+        $query = "SELECT * FROM users";
+
+        $result = $this->sqlite->query($query);
+
+        if('not an error' !== $error = $this->sqlite->lastErrorMsg()){
+            throw new SQLException($error);
+        }
+
+        $users = [];
+        while($row = $result->fetchArray(SQLITE3_ASSOC)){
+            $row['user'] = $this->unserialize($row['params']);
+            unset($row['params']);
+            unset($row['id']);
+            $users[] = $row;
+        }
+
+        return $users;
+    }
+
     private function schemaExists()
     {
         $result = $this->sqlite->query("PRAGMA table_info(users)");

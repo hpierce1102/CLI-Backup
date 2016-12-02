@@ -16,4 +16,16 @@ interface StorageEngineInterface
     public static function getName();
     public function persistUser(String $userAlias, User $user);
     public function retrieveUser(String $userAlias);
+
+    /*
+     * This method must return an multidimensional array where the 2nd dimension contains an array like:
+     * array(
+     *  'alias' => 'name',
+     *  'user' => $userInstance
+     * )
+     * The alias cannot be provided as the key, because this method is intended for helping with debugging.
+     * We would not want users to be overwritten if multiple users existed with the same alias - that would
+     * defeat the purpose.
+     */
+    public function listUsers();
 }

@@ -19,7 +19,7 @@ class JSONStorageEngine implements StorageEngineInterface
 
     public static function initFromConfig(Array $config)
     {
-        // TODO: Implement initFromConfig() method.
+        return new self();
     }
     
     public function persistUser(String $userAlias, User $user)
@@ -32,5 +32,8 @@ class JSONStorageEngine implements StorageEngineInterface
         // TODO: Implement retrieveUser() method.
     }
 
-
+    public function listUsers()
+    {
+        return [];
+    }
 }
