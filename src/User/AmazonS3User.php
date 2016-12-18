@@ -9,7 +9,7 @@ namespace Backup\User;
 
 use Backup\Uploader\AmazonS3Uploader;
 
-class AmazonS3User implements UserInterface
+class AmazonS3User extends User
 {
     protected $bucket;
     protected $region;
