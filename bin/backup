@@ -1,6 +1,11 @@
 #!/usr/bin/env php
 <?php
-
+/**
+ * @copyright Hayden Pierce (hayden@haydenpierce.com)
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
@@ -9,6 +14,9 @@ use Backup\Command\CleanUpCommand;
 use Backup\Command\DebugCommand;
 use Backup\Command\RegisterUserCommand;
 use Backup\Command\RestoreCommand;
+use Backup\Notifier\NotificationLevels;
+use Backup\Notifier\NotifierInterface;
+use Backup\Util\Timer;
 
 $application = new Application();
 
@@ -18,4 +26,56 @@ $application->add(new DebugCommand());
 $application->add(new RegisterUserCommand());
 $application->add(new RestoreCommand());
 
-$application->run();
+//Since this app is intended to be automated via cron, errors that occur cannot simply be reported via PHP.
+//We must notify an admin (optionally) via email to intervene to address a problem.
+$application->setCatchExceptions(false);
+$application->setAutoExit(false);
+
+$config = \Backup\Util\ConfigParser::getConfig();
+
+$notificationLevel = $config['Notifier']['notificationLevel'];
+$notifiers = $config['Notifier'];
+$notifiers = array_filter($notifiers, function($notifier){
+   return isset($notifier['enabled']) && $notifier['enabled'];
+});
+
+$notifiers = array_keys($notifiers);
+
+/** @var NotifierInterface[] $notifiers */
+$notifiers = array_map(function($notifier) use ($config){
+    $possibleClasses = \Backup\Util\ClassFinder::getClassesInNamespace('Backup\\Notifier', NotifierInterface::class);
+    /** @var NotifierInterface $class */
+    foreach($possibleClasses as $class){
+        if($class::getName() == $notifier){
+            return $class::initFromConfig($config);
+        }
+    }
+
+    throw new OutOfBoundsException('Could not find a notifier named' . $notifier);
+}, $notifiers);
+
+// "the command name MUST be the first element of the input"
+// https://github.com/symfony/symfony/blob/71b8a665b07e7e5268198aa6f9fb585f065bb869/src/Symfony/Component/Console/Application.php#L186
+$input = new \Symfony\Component\Console\Input\ArgvInput();
+$commandName = $input->getFirstArgument();
+
+try {
+    $timer = new Timer();
+    $timer->start();
+
+    $application->run();
+
+    if($notificationLevel >= NotificationLevels::ALWAYS){
+        $note = sprintf('Total execution time: %s', $timer->getIntervalEnglish());
+        foreach($notifiers as $notifier){
+            $notifier->sendNotification($commandName, true, $note);
+        }
+    }
+} catch ( \Exception $e) {
+    if($notificationLevel >= NotificationLevels::ERRORS){
+        $note = sprintf('An error occurred: %e', $e->getTraceAsString());
+        foreach($notifiers as $notifier){
+            $notifier->sendNotification($commandName, false, $note);
+        }
+    }
+}

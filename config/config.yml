@@ -1,3 +1,14 @@
+Notifier:
+  notificationLevel: 3 #0 - never, 1 - errors, 3 - always
+  EmailNotifier:
+    enabled: ~
+    fromAddress:
+    toAddresses: [  ]
+    SMTPHost: smtp.gmail.com
+    SMTPPort: 587
+    SMTPEncryption: tls
+    SMTPUserName:
+    SMTPPassword:
 DefaultStorageEngine: SQLite
 StorageEngine:
   SQLite:

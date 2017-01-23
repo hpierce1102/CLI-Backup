@@ -9,6 +9,7 @@
         "symfony/console": "^3.1",
         "symfony/config": "^3.1",
         "symfony/yaml": "^3.1",
-        "aws/aws-sdk-php": "^3.20"
+        "aws/aws-sdk-php": "^3.20",
+        "swiftmailer/swiftmailer": "^5.4"
     }
 }
