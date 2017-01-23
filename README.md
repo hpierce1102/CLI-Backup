@@ -72,6 +72,40 @@ seeing which users have already been created and which settings they use.
 
 `$ ./bin/backup debug`
 
+Notifiers - Error Handling
+--------------------------
+
+Occasionally, a scheduled task can fail for one reason or another. Reasons for this could be:
+an API limit being hit, or files get misplaced in the operating system. In any case, it's 
+important to send out notifications about a task's success or failure so you can intervene 
+when needed to ensure regular backups are actually occuring.
+
+Backup-CLI provides this feature, which can be enabled by enabling each notifier in the configuration
+ file:
+    
+    # config/config.yml
+    Notifier:
+      notificationLevel: 3 #0 - never, 1 - errors, 3 - always
+      EmailNotifier:
+        enabled: ~ # ~ means the notifier is enabled, leave blank for disabled.
+        # ...
+
+When more than one notifier is enabled, all of them will be run. This leaves the
+opportunity open for future expansion into more notifiers (such as Slack or Hipchat notifications).
+
+The types of notifications can also be configured via the `notifcationLevel` option.
+
+`0` - Never, no notifications will ever be sent (not recommended).
+
+`1` - Errors, notifications will only be send if an exception occurs (recommended).
+
+`3` - Always, notifications will be sent after all commands, this includes registering users and the debug commands. 
+
+**Notifier Specific information:**
+
+[Email Notifier](docs/Notifiers/EmailNotifier.md)
+
+
 Read More
 ---------
 [Application Architecture](docs/Architecture.md)
