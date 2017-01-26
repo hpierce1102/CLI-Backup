@@ -1,7 +1,8 @@
 {
     "autoload":{
         "psr-4" : {
-            "Backup\\" : "src/"
+            "Backup\\" : "src/",
+            "Backup\\Tests\\": "tests/"
         }
     },
     "require": {
@@ -11,5 +12,8 @@
         "symfony/yaml": "^3.1",
         "aws/aws-sdk-php": "^3.20",
         "swiftmailer/swiftmailer": "^5.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.7"
     }
 }

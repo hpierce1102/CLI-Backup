@@ -105,6 +105,14 @@ The types of notifications can also be configured via the `notifcationLevel` opt
 
 [Email Notifier](docs/Notifiers/EmailNotifier.md)
 
+Run The Tests
+-------------
+
+Testing suite was created against PHPUnit 5.7.8. 
+
+Tests can be run like this:
+
+    $ phpunit --bootstrap=tests/bootstrap.php tests
 
 Read More
 ---------
