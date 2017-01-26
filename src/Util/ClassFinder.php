@@ -19,7 +19,15 @@ class ClassFinder
 
     public static function getClassesInNamespace(String $namespace, String $interface=null)
     {
-        $files = scandir(self::getNamespaceDirectory($namespace));
+        $directory = self::getNamespaceDirectory($namespace);
+
+        if(empty($directory)){
+            throw new \InvalidArgumentException(sprintf(
+                '%s did not map to a physical directory. Check that it exists, follows PSR-4 guidelines, and is listed in composer.json.',
+                $namespace));
+        }
+
+        $files = scandir($directory);
 
         $classes = array_map(function($file) use ($namespace){
             return $namespace . '\\' . str_replace('.php', '', $file);
