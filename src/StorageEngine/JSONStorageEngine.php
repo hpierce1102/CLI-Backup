@@ -8,6 +8,7 @@
 
 namespace Backup\StorageEngine;
 
+use Backup\Exception\InvalidConfigStateException;
 use Backup\Exception\JSONException;
 use Backup\User\User;
 
@@ -18,7 +19,9 @@ class JSONStorageEngine implements StorageEngineInterface
 
     public function __construct($path)
     {
-        if(!file_exists($path)){
+        $fileEmpty = !file_exists($path) || (filesize($path) == 0);
+
+        if($fileEmpty){
             file_put_contents($path, json_encode( [] ));
         }
 
@@ -49,12 +52,20 @@ class JSONStorageEngine implements StorageEngineInterface
     {
         $record = new \stdClass();
 
+        if($this->userExists($userAlias)){
+            throw new \InvalidArgumentException(sprintf('User %s already exists in the JSON. Cannot add this user.',
+                $userAlias
+            ));
+        };
+
         $record->alias = $userAlias;
         $record->params = serialize($user);
 
         $this->users[] = $record;
 
-        file_put_contents($this->path, json_encode($this->users));
+        $bytes = file_put_contents($this->path, json_encode($this->users));
+
+        return is_int($bytes) && $bytes > 0;
     }
 
     public function retrieveUser(String $userAlias)
@@ -79,9 +90,20 @@ class JSONStorageEngine implements StorageEngineInterface
     public function listUsers()
     {
         return array_map(function($user){
-            $user->id = $user->alias;
-            unset($user->alias);
-            return (array) $user;
+            $listItem = [
+                'alias' => $user->alias,
+                'user' => unserialize($user->params)
+            ];
+            return $listItem;
         },$this->users);
+    }
+
+    private function userExists(String $alias)
+    {
+        $aliases = array_map(function($user){
+            return $user->alias;
+        }, $this->users);
+
+        return in_array($alias, $aliases);
     }
 }
