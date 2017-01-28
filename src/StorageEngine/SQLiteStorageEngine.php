@@ -44,10 +44,11 @@ class SQLiteStorageEngine implements StorageEngineInterface
     public function persistUser(String $userAlias, User $user)
     {
         $query = "INSERT INTO users (alias, params) VALUES (:alias, :params)";
+        $user = $this->serialize($user);
 
         $stmt = $this->sqlite->prepare($query);
         $stmt->bindParam(':alias', $userAlias);
-        $stmt->bindParam(':params', $this->serialize($user));
+        $stmt->bindParam(':params', $user);
         $stmt->execute();
 
         return $this->checkQuerySucceeded($query);
