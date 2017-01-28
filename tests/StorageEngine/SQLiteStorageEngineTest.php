@@ -11,7 +11,7 @@ use Backup\StorageEngine\SQLiteStorageEngine;
 use Backup\User\AmazonS3User;
 use PHPUnit\Framework\TestCase;
 
-class AmazonS3UserTest extends TestCase
+class SQLiteStorageEngineTest extends TestCase
 {
     /** @var  SQLiteStorageEngine */
     protected $storageEngine;
